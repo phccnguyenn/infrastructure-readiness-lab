@@ -1,0 +1,132 @@
+# Reusable assessment template for translating workload needs into Kubernetes
+# requirements and controls.
+#
+# Copy this file for one application, environment and artifact version.
+# Keep Layer 1 and Layer 2 in the same concern item:
+# workload need -> evidence -> decision -> Kubernetes behavior -> control -> validation.
+#
+# This file is not a Helm values file. Helm remains the source of the applied
+# Kubernetes control values; this assessment records why those controls exist.
+
+schema_version: "1.0"
+
+metadata:
+  assessment_id: null
+  application: null
+  environment: null
+  artifact_version: null
+  assessment_owner: null
+  reviewers: []
+  assessment_date: null
+  review_horizon: null
+  # Allowed: draft, in_review, approved, superseded
+  status: draft
+  scope:
+    included: []
+    excluded: []
+
+# Add one item for each concern, for example:
+# runtime, traffic, capacity, availability, state, dependency, access, security.
+items:
+  - id: null
+    concern: null
+    title: null
+
+    # Layer 1: describe the required workload outcome without selecting a
+    # Kubernetes object, Helm field or cloud service.
+    workload:
+      observed:
+        - statement: null
+          source: null
+          evidence: []
+
+      intent:
+        - statement: null
+          validation_owner: null
+          evidence: []
+
+      assumptions:
+        - statement: null
+          basis: null
+          risk_if_wrong: null
+          risk_level: null
+          validation_owner: null
+          validation_method: null
+
+      requirement:
+        id: null
+        # Allowed: unknown, draft, validated, not_applicable
+        status: unknown
+        statement: null
+        acceptance_criteria: []
+        review_horizon: null
+
+    # Evidence already available and evidence still required before a decision.
+    evidence:
+      available: []
+      missing: []
+
+    # A decision may stay unknown or blocked. Do not invent a control value to
+    # make the assessment look complete.
+    decision:
+      # Allowed: unknown, blocked, approved, adjust
+      status: unknown
+      rationale: null
+      approved_by: null
+      approved_at: null
+
+    # Layer 2: describe the Kubernetes orchestration behavior derived from the
+    # workload requirement, then reference only the controls relevant to it.
+    kubernetes:
+      requirement:
+        id: null
+        # Allowed: unknown, draft, validated, not_applicable
+        status: unknown
+        derived_from: []
+        statement: null
+        acceptance_criteria: []
+
+      current_controls:
+        - source_file: null
+          field: null
+          value: null
+          # Allowed: bootstrap, legacy, validated, unknown
+          status: unknown
+
+      proposed_controls:
+        - source_file: null
+          field: null
+          proposed_value: null
+          rationale: null
+
+      gaps: []
+
+    # Validation proves the selected controls satisfy the requirement in the
+    # stated environment. Local evidence must not be presented as EKS evidence.
+    validation:
+      environment: null
+      methods: []
+      expected_results: []
+      evidence: []
+      # Allowed: not_run, passed, failed, partial
+      result: not_run
+      limitations: []
+
+# These layers remain visible but are intentionally outside the current
+# Minikube/Kubernetes milestone.
+deferred_layers:
+  infrastructure:
+    status: deferred
+    reason: outside_current_milestone
+    derived_from: []
+    open_questions: []
+    entry_criteria: []
+    required_evidence: []
+
+  aws_eks:
+    status: deferred
+    reason: infrastructure_requirements_not_yet_approved
+    derived_from: []
+    open_questions: []
+    entry_criteria: []
+    required_evidence: []
