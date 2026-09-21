@@ -1,0 +1,150 @@
+# Stable application baseline for go-click-tracker.
+# Environment and release files may override these values.
+
+# Application identity
+appName: go-click-tracker
+appVersion: "3498b2f_v1"
+
+# Workload shape
+replicaCount: 1
+
+# Container artifact
+image:
+  repository: go-click-tracker
+  tag: "3498b2f_v1"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# Use the image's default CMD ["./server"].
+command: []
+args: []
+
+# Pod identity is dynamic; runtime configuration is injected from the ConfigMap
+# below so changing it does not require rebuilding the image.
+env:
+  - name: INSTANCE_ID
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+
+envFrom: []
+
+configMap:
+  enabled: true
+  name: go-click-tracker-runtime
+  data:
+    ENVIRONMENT: local
+    SERVER_PORT: "9000"
+    STATIC_ENV: test
+    STATIC_COUNTRY: id
+    AWS_REGION: ap-southeast-1
+    DYNAMODB_SCHEMA: LOCAL_
+    DYNAMODB_TABLE_SHORTER_URL: SHORTER_URL
+    DYNAMODB_TABLE_SMART_LINK_TAG_API_KEY: SMART_LINK_TAG_API_KEY
+    DYNAMODB_TABLE_SITE: SITE
+    DYNAMODB_TABLE_CAMPAIGN: CAMPAIGN
+    DYNAMODB_TABLE_BANNER: BANNER
+    DYNAMODB_TABLE_AFFILIATION: AFFILIATION
+    DYNAMODB_TABLE_NEW_SESSION: NEW_SESSION
+    DYNAMODB_TABLE_IMPRESSION: IMPRESSION
+    CACHE_TTL_SECONDS: "600"
+    LOG_DIR: /var/log/at-tracker/
+    OFF_HEALTH_CHECK: "1"
+    OTEL_ENABLED: "false"
+
+# Network contract: callers use Service port 9000; the process also listens on 9000.
+serviceType: ClusterIP
+services:
+  - serviceName: http
+    exposedPort: 9000
+    containerPort: 9000
+
+# Bootstrap only: replace after benchmark and runtime evidence.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# /health currently proves that the HTTP process responds.
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 9000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 9000
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+# Local workload identity; no cloud role or registry credentials are attached.
+serviceAccount:
+  create: true
+  name: go-click-tracker
+  annotations: {}
+  automountServiceAccountToken: false
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9000"
+  prometheus.io/path: /metrics
+
+# Container isolation baseline.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+# Local logs are ephemeral. No PVC or cloud storage is created.
+persistence:
+  enabled: false
+  storageClass: ""
+  persistences: []
+
+volumeMounts:
+  - name: app-logs
+    mountPath: /var/log/at-tracker/
+
+volumes:
+  - name: app-logs
+    emptyDir: {}
+
+# HPA is intentionally disabled for the first local deployment.
+# The current chart does not render an HPA resource yet.
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Minikube does not require production node placement rules.
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+additionalContainers: []
+
+disableServiceLinks: true
+terminationGracePeriodSeconds: 30

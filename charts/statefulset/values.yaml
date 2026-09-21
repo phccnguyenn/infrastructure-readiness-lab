@@ -1,0 +1,78 @@
+# Generic chart defaults. Application and environment values override these.
+
+# Application identity
+appName: example-app
+appVersion: "0.0.0"
+replicaCount: 1
+
+# Container artifact
+image:
+  repository: nginx
+  tag: alpine
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# Container startup contract
+command: []
+args: []
+env: []
+envFrom: []
+
+# Non-sensitive runtime configuration. Values are rendered into a ConfigMap
+# and injected with envFrom. Keep credentials in a Secret instead.
+configMap:
+  enabled: false
+  name: ""
+  data: {}
+
+# Network contract
+serviceType: ClusterIP
+services:
+  - serviceName: http
+    exposedPort: 80
+    containerPort: 80
+
+# Capacity baseline
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Health contract
+livenessProbe: {}
+readinessProbe: {}
+
+# Workload identity and isolation
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+# Storage contract
+persistence:
+  enabled: false
+  storageClass: ""
+  persistences: []
+
+volumeMounts: []
+volumes: []
+
+# Scheduling and availability
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Optional sidecars
+additionalContainers: []
+
+# Pod runtime behaviour
+disableServiceLinks: false
+terminationGracePeriodSeconds: 30

@@ -1,0 +1,154 @@
+---
+# Source: generic-statefulset/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: go-click-tracker
+  namespace: local
+  labels:
+    app.kubernetes.io/name: go-click-tracker
+    app.kubernetes.io/instance: go-click-tracker
+automountServiceAccountToken: false
+
+---
+# Source: generic-statefulset/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-click-tracker-runtime
+  namespace: local
+  labels:
+    app.kubernetes.io/name: go-click-tracker
+    app.kubernetes.io/instance: go-click-tracker
+data:
+  AWS_REGION: "ap-southeast-1"
+  CACHE_TTL_SECONDS: "600"
+  DYNAMODB_SCHEMA: "LOCAL_"
+  DYNAMODB_TABLE_AFFILIATION: "AFFILIATION"
+  DYNAMODB_TABLE_BANNER: "BANNER"
+  DYNAMODB_TABLE_CAMPAIGN: "CAMPAIGN"
+  DYNAMODB_TABLE_IMPRESSION: "IMPRESSION"
+  DYNAMODB_TABLE_NEW_SESSION: "NEW_SESSION"
+  DYNAMODB_TABLE_SHORTER_URL: "SHORTER_URL"
+  DYNAMODB_TABLE_SITE: "SITE"
+  DYNAMODB_TABLE_SMART_LINK_TAG_API_KEY: "SMART_LINK_TAG_API_KEY"
+  ENVIRONMENT: "local"
+  LOG_DIR: "/var/log/at-tracker/"
+  OFF_HEALTH_CHECK: "1"
+  OTEL_ENABLED: "false"
+  SERVER_PORT: "9000"
+  STATIC_COUNTRY: "id"
+  STATIC_ENV: "test"
+
+---
+# Source: generic-statefulset/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-click-tracker
+  namespace: local
+  labels:
+    app.kubernetes.io/name: go-click-tracker
+    app.kubernetes.io/instance: go-click-tracker
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: go-click-tracker
+    app.kubernetes.io/instance: go-click-tracker
+  ports:
+    - name: http
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+
+---
+# Source: generic-statefulset/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: go-click-tracker
+  namespace: local
+  labels:
+    app.kubernetes.io/name: go-click-tracker
+    app.kubernetes.io/instance: go-click-tracker
+spec:
+  serviceName: go-click-tracker
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: go-click-tracker
+      app.kubernetes.io/instance: go-click-tracker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: go-click-tracker
+        app.kubernetes.io/instance: go-click-tracker
+        app.kubernetes.io/version: "3498b2f_v1"
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9000"
+        prometheus.io/scrape: "true"
+        checksum/runtime-config: "a78fef440761faf383c174729ecacedff4a3d9d43cc05fba1d6f81a73b2ec2b3"
+    spec:
+      serviceAccountName: go-click-tracker
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: go-click-tracker
+          image: "go-click-tracker:3498b2f_v1"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          ports:
+            - name: http
+              containerPort: 9000
+              protocol: TCP
+          env:
+            - name: INSTANCE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - configMapRef:
+                name: go-click-tracker-runtime
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+          volumeMounts:
+            - mountPath: /var/log/at-tracker/
+              name: app-logs
+      volumes:
+        - emptyDir: {}
+          name: app-logs
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 30
