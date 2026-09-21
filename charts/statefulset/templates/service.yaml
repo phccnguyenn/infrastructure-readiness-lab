@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.appName | default .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.serviceType }}
+  selector:
+    app.kubernetes.io/name: {{ .Values.appName | default .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    {{- range .Values.services }}
+    - name: {{ .serviceName }}
+      port: {{ .exposedPort }}
+      targetPort: {{ .containerPort }}
+      protocol: TCP
+    {{- end }}

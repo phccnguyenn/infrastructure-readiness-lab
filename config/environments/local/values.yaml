@@ -1,0 +1,18 @@
+# Local/Minikube overrides only.
+
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+
+serviceType: ClusterIP
+
+# Keep local storage ephemeral until persistence is a proven requirement.
+persistence:
+  enabled: false
+  storageClass: ""
+
+# No production placement constraints on a single-node Minikube cluster.
+nodeSelector: {}
+tolerations: []
+affinity: {}

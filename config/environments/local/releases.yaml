@@ -1,0 +1,6 @@
+# Release-specific values. This file has the highest precedence in the local flow.
+
+appVersion: "3498b2f_v1"
+
+image:
+  tag: "3498b2f_v1"
